@@ -231,20 +231,24 @@ __global__ void fused_rope_qk_forward(
   // dim3 grid_dims(total_seq_len, b);
   // dim3 block_dims(C10_WARP_SIZE, h < 16 ? 4 : 8);
   // size_t shared_mem_size = (d / 2) * sizeof(cuDoubleComplex);
+  // grid [B, 3]
 
   if (blockIdx.x >= total_seq_len || blockIdx.y >= b) {
     return;
   }
 
+  // 获取当前batch 的f/h/w
   int64_t ppf = grid[blockIdx.y * 3];
   int64_t pph = grid[blockIdx.y * 3 + 1];
   int64_t ppw = grid[blockIdx.y * 3 + 2];
 
   int64_t total_video_len = ppf * pph * ppw;
 
+  // 划分序列
   int64_t f_split_id = d / 2 - 2 * (d / 6);
   int64_t h_split_id = d / 6;
   int64_t half_d = d / 2;
+
   int64_t fid = blockIdx.x / (pph * ppw);
   int64_t hid = (blockIdx.x % (pph * ppw)) / ppw;
   int64_t wid = blockIdx.x % ppw;
